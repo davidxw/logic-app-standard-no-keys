@@ -82,7 +82,10 @@ resource kvRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: keyVault
   name: guid(identity.id, keyVaultId, '4633458b-17de-408a-b874-0445c86b69e6')
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6'
+    ) // Key Vault Secrets User
     principalType: 'ServicePrincipal'
     principalId: identity.properties.principalId
   }
@@ -122,40 +125,32 @@ resource app 'Microsoft.Web/sites@2022-09-01' = {
     httpsOnly: true
     virtualNetworkSubnetId: subnetId
     keyVaultReferenceIdentity: identity.id
+    siteConfig: {
+      appSettings: [
+        { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
+        { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
+        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~22' }
+        // Storage via managed identity
+        { name: 'AzureWebJobsStorage__accountname', value: storageAccountName }
+        // Storage via user-assigned identity
+        { name: 'AzureWebJobsStorage__credential', value: 'managedIdentity' }
+        { name: 'AzureWebJobsStorage__managedIdentityResourceId', value: identity.id }
+        // VNet routing
+        { name: 'vnetRouteAllEnabled', value: '1' }
+        { name: 'WEBSITE_CONTENTOVERVNET', value: '1' }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+        { name: 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING', value: 'Authorization=AAD' }
+        // Content file share via Key Vault reference
+        { name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', value: contentStorageConnectionStringReference }
+        { name: 'WEBSITE_CONTENTSHARE', value: contentShareName }
+      ]
+    }
   }
   identity: {
     type: 'SystemAssigned, UserAssigned'
     userAssignedIdentities: {
       '${identity.id}': {}
     }
-  }
-}
-
-resource config 'Microsoft.Web/sites/config@2024-11-01' = {
-  name: 'appsettings'
-  parent: app
-  properties: {
-    FUNCTIONS_EXTENSION_VERSION: '~4'
-    FUNCTIONS_WORKER_RUNTIME: 'node'
-    WEBSITE_NODE_DEFAULT_VERSION: '~22'
-
-    // Storage via managed identity
-    AzureWebJobsStorage__accountname: storageAccountName
-
-    // storage via user-assigned identity
-    AzureWebJobsStorage__credential: 'managedIdentity'
-    AzureWebJobsStorage__managedIdentityResourceId: identity.id
-
-    // VNet routing
-    WEBSITE_VNET_ROUTE_ALL: '1'
-    WEBSITE_CONTENTOVERVNET: '1'
-
-    APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
-    APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD'
-
-    // Content file share via Key Vault reference
-    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: contentStorageConnectionStringReference
-    WEBSITE_CONTENTSHARE: contentShareName
   }
 }
 

@@ -38,6 +38,7 @@ var privateStorageTableDnsZoneName = 'privatelink.table.${environment().suffixes
 var privateKeyVaultDnsZoneName = 'privatelink.vaultcore.azure.net'
 
 var tags = {
+  SecurityControl : 'Ignore'
 }
 
 //
@@ -491,19 +492,24 @@ resource keyVaultPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/private
 //
 // Key Vault Secrets — content storage connection strings
 //
+
+var laContentConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${laContentStorageAccount.name};AccountKey=${laContentStorageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+
 resource laContentConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'la-content-storage-connection-string'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${laContentStorageAccount.name};AccountKey=${laContentStorageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    value: laContentConnectionString
   }
 }
+
+var funcContentConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${funcContentStorageAccount.name};AccountKey=${funcContentStorageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 
 resource funcContentConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'func-content-storage-connection-string'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${funcContentStorageAccount.name};AccountKey=${funcContentStorageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    value: funcContentConnectionString
   }
 }
 
@@ -571,6 +577,7 @@ module logicApp 'modules/logicapp.bicep' = {
     keyVaultId: keyVault.id
     contentStorageAccountId: laContentStorageAccount.id
     contentStorageConnectionStringReference: '@Microsoft.KeyVault(SecretUri=${laContentConnectionStringSecret.properties.secretUri})'
+    //contentStorageConnectionStringReference: laContentConnectionString
     contentShareName: laContentShareName
   }
   dependsOn: [
@@ -598,6 +605,7 @@ module functionApp 'modules/functionapp.bicep' = {
     keyVaultId: keyVault.id
     contentStorageAccountId: funcContentStorageAccount.id
     contentStorageConnectionStringReference: '@Microsoft.KeyVault(SecretUri=${funcContentConnectionStringSecret.properties.secretUri})'
+    //contentStorageConnectionStringReference: funcContentConnectionString
     contentShareName: funcContentShareName
   }
   dependsOn: [

@@ -91,8 +91,10 @@ These settings replace the `AzureWebJobsStorage` connection string with managed 
 
 | App Setting | Value | Logic App | Function App | Purpose |
 |-------------|-------|:---------:|:------------:|---------|
-| `WEBSITE_VNET_ROUTE_ALL` | `1` | Yes | Yes | Route all outbound traffic through the VNet, include WebJobStorage account |
+| `vnetRouteAllEnabled` | `1` | Yes | Yes | Route all outbound traffic through the VNet, include WebJobStorage account |
 | `WEBSITE_CONTENTOVERVNET` | `1` | Yes | Yes | Access content file share via private endpoint |
+
+(Note: `vnetRouteAllEnabled` was previously `WEBSITE_VNET_ROUTE_ALL`)
 
 ### App settings — Content file share (Key Vault backed)
 

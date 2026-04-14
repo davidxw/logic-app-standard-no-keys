@@ -127,53 +127,42 @@ resource app 'Microsoft.Web/sites@2022-09-01' = {
     httpsOnly: true
     virtualNetworkSubnetId: subnetId
     keyVaultReferenceIdentity: identity.id
+    siteConfig: {
+      appSettings: [
+        { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
+        { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
+        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '22' }
+        // Workflow storage via managed identity
+        { name: 'AzureWebJobsStorage__blobServiceUri', value: storageBlobEndpoint }
+        { name: 'AzureWebJobsStorage__queueServiceUri', value: storageQueueEndpoint }
+        { name: 'AzureWebJobsStorage__tableServiceUri', value: storageTableEndpoint }
+        // Storage via user-assigned identity
+        { name: 'AzureWebJobsStorage__managedIdentityResourceId', value: identity.id }
+        { name: 'AzureWebJobsStorage__credential', value: 'managedIdentity' }
+        // VNet routing
+        { name: 'vnetRouteAllEnabled', value: '1' }
+        { name: 'WEBSITE_CONTENTOVERVNET', value: '1' }
+        { name: 'AzureFunctionsJobHost__extensionBundle__id', value: 'Microsoft.Azure.Functions.ExtensionBundle.Workflows' }
+        { name: 'AzureFunctionsJobHost__extensionBundle__version', value: '${'[1.*,'}${' 2.0.0)'}' }
+        { name: 'APP_KIND', value: 'workflowApp' }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+        { name: 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING', value: 'Authorization=AAD' }
+        // Content file share via Key Vault reference
+        { name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', value: contentStorageConnectionStringReference }
+        { name: 'WEBSITE_CONTENTSHARE', value: contentShareName }
+        { name: 'WORKFLOWS_RESOURCE_GROUP_NAME', value: resourceGroup().name }
+        { name: 'WORKFLOWS_SUBSCRIPTION_ID', value: subscription().subscriptionId }
+        { name: 'WORKFLOWS_LOCATION_NAME', value: location }
+        { name: 'WORKFLOWS_TENANT_ID', value: subscription().tenantId }
+        { name: 'WORKFLOWS_MANAGEMENT_BASE_URI', value: 'https://management.azure.com/' }
+      ]
+    }
   }
   identity: {
     type: 'SystemAssigned, UserAssigned'
     userAssignedIdentities: {
       '${identity.id}': {}
     }
-  }
-}
-
-resource config 'Microsoft.Web/sites/config@2024-11-01' = {
-  name: 'appsettings'
-  parent: app
-  properties: {
-    FUNCTIONS_EXTENSION_VERSION: '~4'
-    FUNCTIONS_WORKER_RUNTIME: 'node'
-    WEBSITE_NODE_DEFAULT_VERSION: '22'
-
-    // Workflow storage via managed identity
-
-    AzureWebJobsStorage__blobServiceUri: storageBlobEndpoint
-    AzureWebJobsStorage__queueServiceUri: storageQueueEndpoint
-    AzureWebJobsStorage__tableServiceUri: storageTableEndpoint
-
-    // storage via user-assigned identity
-    AzureWebJobsStorage__managedIdentityResourceId: identity.id
-    AzureWebJobsStorage__credential: 'managedIdentity'
-    
-    // VNet routing
-    WEBSITE_VNET_ROUTE_ALL: '1'
-    WEBSITE_CONTENTOVERVNET: '1'
-
-    AzureFunctionsJobHost__extensionBundle__id: 'Microsoft.Azure.Functions.ExtensionBundle.Workflows'
-    AzureFunctionsJobHost__extensionBundle__version: '${'[1.*,'}${' 2.0.0)'}'
-    APP_KIND: 'workflowApp'
-
-    APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
-    APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD'
-
-    // Content file share via Key Vault reference
-    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: contentStorageConnectionStringReference
-    WEBSITE_CONTENTSHARE: contentShareName
-
-    WORKFLOWS_RESOURCE_GROUP_NAME: resourceGroup().name
-    WORKFLOWS_SUBSCRIPTION_ID: subscription().subscriptionId
-    WORKFLOWS_LOCATION_NAME: location
-    WORKFLOWS_TENANT_ID: subscription().tenantId
-    WORKFLOWS_MANAGEMENT_BASE_URI: 'https://management.azure.com/'
   }
 }
 
