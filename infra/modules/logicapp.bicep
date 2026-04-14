@@ -150,6 +150,7 @@ resource app 'Microsoft.Web/sites@2022-09-01' = {
         // Content file share via Key Vault reference
         { name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', value: contentStorageConnectionStringReference }
         { name: 'WEBSITE_CONTENTSHARE', value: contentShareName }
+        { name: 'WEBSITE_SKIP_CONTENTSHARE_VALIDATION', value: '1' }
         { name: 'WORKFLOWS_RESOURCE_GROUP_NAME', value: resourceGroup().name }
         { name: 'WORKFLOWS_SUBSCRIPTION_ID', value: subscription().subscriptionId }
         { name: 'WORKFLOWS_LOCATION_NAME', value: location }
@@ -159,11 +160,15 @@ resource app 'Microsoft.Web/sites@2022-09-01' = {
     }
   }
   identity: {
-    type: 'SystemAssigned, UserAssigned'
+    type: 'UserAssigned'
     userAssignedIdentities: {
       '${identity.id}': {}
     }
   }
+  dependsOn: [
+    kvRbac
+    storageRbac
+  ]
 }
 
 output name string = app.name

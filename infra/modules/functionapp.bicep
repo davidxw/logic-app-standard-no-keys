@@ -143,15 +143,20 @@ resource app 'Microsoft.Web/sites@2022-09-01' = {
         // Content file share via Key Vault reference
         { name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', value: contentStorageConnectionStringReference }
         { name: 'WEBSITE_CONTENTSHARE', value: contentShareName }
+        { name: 'WEBSITE_SKIP_CONTENTSHARE_VALIDATION', value: '1' }
       ]
     }
   }
   identity: {
-    type: 'SystemAssigned, UserAssigned'
+    type: 'UserAssigned'
     userAssignedIdentities: {
       '${identity.id}': {}
     }
   }
+  dependsOn: [
+    kvRbac
+    storageRbac
+  ]
 }
 
 output name string = app.name
